@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Coursera-data-science-ml : Project for Data Science Machine Learning Class on Coursera">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Coursera-data-science-ml</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/tmuetze/Coursera-Data-Science-ML">View on GitHub</a>
+
+          <h1 id="project_title">Coursera-data-science-ml</h1>
+          <h2 id="project_tagline">Project for Data Science Machine Learning Class on Coursera</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/tmuetze/Coursera-Data-Science-ML/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/tmuetze/Coursera-Data-Science-ML/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p>&lt;!DOCTYPE html&gt;</p>
+
+<p></p>
+
+<p></p>
+
+<p></p>
+
+<p></p>
+
+<p></p>Machine Learning Project<p></p>
+
+code{white-space: pre;}<p></p>
+
+
+  pre:not([class]) {
+    background-color: white;
+  }
+<p></p>
+
+<p></p>
+
+
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+<div>
+
+
+<div>
+<h1>
+<a name="machine-learning-project" class="anchor" href="#machine-learning-project"><span class="octicon octicon-link"></span></a>Machine Learning Project</h1>
+<h4>
+<a name="september-17-2014" class="anchor" href="#september-17-2014"><span class="octicon octicon-link"></span></a><em>September 17, 2014</em>
+</h4>
+</div>
+
+<div>
+<h3>
+<a name="executive-summary" class="anchor" href="#executive-summary"><span class="octicon octicon-link"></span></a>Executive summary</h3>
+<p>The quantified self movement group collects a wide range of data about their activities using devices such as Jawbone Up, Nike FuelBand, and Fitbit and evaluates how much of an activity they do but not how well. The latter is what this project aims to do. Using data from accelerometers on the belt, forearm, arm, and dumbell of 6 individuals, we predict the way in which a participant did an activity. More information about the project can be found here: <a href="http://groupware.les.inf.puc-rio.br/har">http://groupware.les.inf.puc-rio.br/har</a></p>
+</div>
+
+<div>
+<h3>
+<a name="setup" class="anchor" href="#setup"><span class="octicon octicon-link"></span></a>Setup</h3>
+<p>We first load the training and the test datasets into R.</p>
+<pre><code>trainData &lt;- read.csv("pml-training.csv", na.strings = c("",NA))
+testData &lt;- read.csv("pml-testing.csv", na.strings = c("",NA))</code></pre>
+</div>
+
+<div>
+<h3>
+<a name="exploratory-data-analysis" class="anchor" href="#exploratory-data-analysis"><span class="octicon octicon-link"></span></a>Exploratory data analysis</h3>
+<p>The dataset contains 160 variables describing the activity. There are 19622 cases in the training dataset, enough to do cross validation.</p>
+<pre><code>c(dim(trainData), dim(testData))</code></pre>
+<pre><code>## [1] 19622   160    20   160</code></pre>
+</div>
+
+<div>
+<h3>
+<a name="data-cleaning" class="anchor" href="#data-cleaning"><span class="octicon octicon-link"></span></a>Data cleaning</h3>
+<p>To create a tidy dataset, we remove the first 6 columns that contain information on the time and date the experiment was conducted as well as on the participant. This information should not correlate with the other measurement data and thus only adds unncecessary information to the model. We also delete columns that contain NAs as they don’t contribute to the model but rather distort it and unnecessarily increase algorithm and time complexity.</p>
+<pre><code>names(trainData)[1:6]</code></pre>
+<pre><code>## [1] "X"                    "user_name"            "raw_timestamp_part_1"
+## [4] "raw_timestamp_part_2" "cvtd_timestamp"       "new_window"</code></pre>
+<pre><code>trainNewDF &lt;- subset(trainData, select=-c(1:6))
+train &lt;- trainNewDF[colSums(is.na(trainNewDF)) ==0]
+testNewDF &lt;- subset(testData, select=-c(1:6))
+test &lt;- testNewDF[colSums(is.na(testNewDF)) ==0]</code></pre>
+</div>
+
+<div>
+<h3>
+<a name="cross-validation" class="anchor" href="#cross-validation"><span class="octicon octicon-link"></span></a>Cross validation</h3>
+<p>We create a cross validation set by taking 20% of the original training data and assigning them to the cross validation set.</p>
+<pre><code>library(caret)</code></pre>
+<pre><code>## Loading required package: lattice
+## Loading required package: ggplot2</code></pre>
+<pre><code>inTrain &lt;- createDataPartition(y=train$classe, p=0.8, list=FALSE)
+train &lt;- train[inTrain,]
+cv &lt;- train[-inTrain,]</code></pre>
+</div>
+
+<div>
+<h3>
+<a name="building-and-fitting-a-model" class="anchor" href="#building-and-fitting-a-model"><span class="octicon octicon-link"></span></a>Building and fitting a model</h3>
+<p>We fit a randomForest model to the data to learn to predict the variable classe, the activity type. This model was chosen because it is very accurate although it might lag in speed and interpretability and tend towards overfitting which we assess in the out of sample and in sample error rate.</p>
+<pre><code>library(randomForest)
+modelFit &lt;- randomForest(classe ~., data=train)
+modelFit</code></pre>
+<pre><code>## 
+## Call:
+##  randomForest(formula = classe ~ ., data = train) 
+##                Type of random forest: classification
+##                      Number of trees: 500
+## No. of variables tried at each split: 7
+## 
+##         OOB estimate of  error rate: 0.27%
+## Confusion matrix:
+##      A    B    C    D    E class.error
+## A 4463    1    0    0    0    0.000224
+## B    6 3030    2    0    0    0.002633
+## C    0    9 2728    1    0    0.003652
+## D    0    0   18 2553    2    0.007773
+## E    0    0    0    4 2882    0.001386</code></pre>
+<pre><code>plot(modelFit)</code></pre>
+<p><img title="plot of chunk unnamed-chunk-5" alt="plot of chunk unnamed-chunk-5" width="672"></p>
+</div>
+
+<div>
+<h3>
+<a name="prediction-for-the-test-set" class="anchor" href="#prediction-for-the-test-set"><span class="octicon octicon-link"></span></a>Prediction for the test set</h3>
+<p>We then apply the model and predict the variable classe in the cross validation, the training set (as a reference to assess the in sample error) and the test set. Below the predictions of the variable class for each of the 20 test cases.</p>
+<pre><code>predCV &lt;- predict(modelFit, cv)
+predTr &lt;- predict(modelFit, train)
+prediction &lt;- predict(modelFit, test)
+prediction</code></pre>
+<pre><code>##  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 
+##  B  A  B  A  A  E  D  B  A  A  B  C  B  A  E  E  A  B  B  B 
+## Levels: A B C D E</code></pre>
+</div>
+
+<div>
+<h3>
+<a name="expected-out-of-sample-error-rate" class="anchor" href="#expected-out-of-sample-error-rate"><span class="octicon octicon-link"></span></a>Expected out of sample error rate</h3>
+<p>The out of sample error rate, aka generalization error, is the error rate you get when you test your prediction algorithm on a new dataset. It is generally bigger than the in sample error rate due to overfitting of the algorithm and in sample predictor to the given data. The accuracy of the model is 0.9977, thus the out of sample error rate is 0.23%.</p>
+<pre><code>confusionMatrix(data=predCV, cv$classe)</code></pre>
+<pre><code>## Loading required namespace: e1071</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction   A   B   C   D   E
+##          A 888   0   0   0   0
+##          B   0 593   0   0   0
+##          C   0   0 542   0   0
+##          D   0   0   0 540   0
+##          E   0   0   0   0 573
+## 
+## Overall Statistics
+##                                     
+##                Accuracy : 1         
+##                  95% CI : (0.999, 1)
+##     No Information Rate : 0.283     
+##     P-Value [Acc &gt; NIR] : &lt;2e-16    
+##                                     
+##                   Kappa : 1         
+##  Mcnemar's Test P-Value : NA        
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity             1.000    1.000    1.000    1.000    1.000
+## Specificity             1.000    1.000    1.000    1.000    1.000
+## Pos Pred Value          1.000    1.000    1.000    1.000    1.000
+## Neg Pred Value          1.000    1.000    1.000    1.000    1.000
+## Prevalence              0.283    0.189    0.173    0.172    0.183
+## Detection Rate          0.283    0.189    0.173    0.172    0.183
+## Detection Prevalence    0.283    0.189    0.173    0.172    0.183
+## Balanced Accuracy       1.000    1.000    1.000    1.000    1.000</code></pre>
+<p>And the model is 100% accurate on the training set. The insample rate is 0% which confirms that the in sample rete is generally lower than the out of sample rate. However, we might have a problem of overfitting but fitting this model on the test set shows perfect matches as well.</p>
+<pre><code>confusionMatrix(data=predTr, train$classe)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 4464    0    0    0    0
+##          B    0 3038    0    0    0
+##          C    0    0 2738    0    0
+##          D    0    0    0 2573    0
+##          E    0    0    0    0 2886
+## 
+## Overall Statistics
+##                                 
+##                Accuracy : 1     
+##                  95% CI : (1, 1)
+##     No Information Rate : 0.284 
+##     P-Value [Acc &gt; NIR] : &lt;2e-16
+##                                 
+##                   Kappa : 1     
+##  Mcnemar's Test P-Value : NA    
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity             1.000    1.000    1.000    1.000    1.000
+## Specificity             1.000    1.000    1.000    1.000    1.000
+## Pos Pred Value          1.000    1.000    1.000    1.000    1.000
+## Neg Pred Value          1.000    1.000    1.000    1.000    1.000
+## Prevalence              0.284    0.194    0.174    0.164    0.184
+## Detection Rate          0.284    0.194    0.174    0.164    0.184
+## Detection Prevalence    0.284    0.194    0.174    0.164    0.184
+## Balanced Accuracy       1.000    1.000    1.000    1.000    1.000</code></pre>
+<p>As we don’t have the values for the variable classe in the test set (we are predicting it afterall), we cannot create a confusion matrix between predicted test classe values and actual test classe values. Hence, we cannot assess the out of sample error for the test set.</p>
+</div>
+
+<p></p>
+</div>
+
+<p>
+</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Coursera-data-science-ml maintained by <a href="https://github.com/tmuetze">tmuetze</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
