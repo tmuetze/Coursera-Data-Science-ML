@@ -1,0 +1,80 @@
+---
+title: "Machine Learning Project"
+date: "September 17, 2014"
+output: html_document
+---
+
+###Executive summary
+The quantified self movement group collects a wide range of data about their activities using devices such as Jawbone Up, Nike FuelBand, and Fitbit and evaluates how much of an activity they do but not how well.
+The latter is what this project aims to do. Using data from accelerometers on the belt, forearm, arm, and dumbell of 6 individuals, we predict the way in which a participant did an activity. More information about the project can be found here: http://groupware.les.inf.puc-rio.br/har
+
+###Setup
+We first load the training and the test datasets into R.
+```{r}
+trainData <- read.csv("pml-training.csv", na.strings = c("",NA))
+testData <- read.csv("pml-testing.csv", na.strings = c("",NA))
+```
+
+###Exploratory data analysis
+The dataset contains 160 variables describing the activity. There are 19622 cases in the training dataset, enough to do cross validation.
+```{r}
+c(dim(trainData), dim(testData))
+```
+
+### Data cleaning 
+To create a tidy dataset, we remove the first 6 columns that contain information on the time and date the experiment was conducted as well as on the participant. This information should not correlate with the other measurement data and thus only adds unncecessary information to the model. We also delete columns that contain NAs as they don't contribute to the model but rather distort it and unnecessarily increase algorithm and time complexity.
+
+```{r}
+names(trainData)[1:6]
+trainNewDF <- subset(trainData, select=-c(1:6))
+train <- trainNewDF[colSums(is.na(trainNewDF)) ==0]
+testNewDF <- subset(testData, select=-c(1:6))
+test <- testNewDF[colSums(is.na(testNewDF)) ==0]
+```
+
+###Cross validation
+We create a cross validation set by taking 20% of the original training data and assigning them to the cross validation set.
+
+```{r}
+library(caret)
+inTrain <- createDataPartition(y=train$classe, p=0.8, list=FALSE)
+train <- train[inTrain,]
+cv <- train[-inTrain,]
+```
+
+
+###Building and fitting a model
+We fit a randomForest model to the data to learn to predict the variable classe, the activity type. This model was chosen because it is very accurate although it might lag in speed and interpretability and tend towards overfitting which we assess in the out of sample and in sample error rate.
+
+```{r, message=FALSE}
+library(randomForest)
+modelFit <- randomForest(classe ~., data=train)
+modelFit
+plot(modelFit)
+```
+
+###Prediction for the test set
+We then apply the model and predict the variable classe in the cross validation, the training set (as a reference to assess the in sample error) and the test set. Below the predictions of the variable class for each of the 20 test cases.
+
+```{r}
+predCV <- predict(modelFit, cv)
+predTr <- predict(modelFit, train)
+prediction <- predict(modelFit, test)
+prediction
+```
+
+###Expected out of sample error rate
+The out of sample error rate, aka generalization error, is the error rate you get when you test your prediction algorithm on a new dataset. It is generally bigger than the in sample error rate due to overfitting of the algorithm and in sample predictor to the given data. The accuracy of the model is 0.9977, thus the out of sample error rate is 0.23%.
+
+```{r}
+confusionMatrix(data=predCV, cv$classe)
+```
+
+And the model is 100% accurate on the training set. The insample rate is 0% which confirms that the in sample rete is generally lower than the out of sample rate. However, we might have a problem of overfitting but fitting this model on the test set shows perfect matches as well.
+
+```{r}
+confusionMatrix(data=predTr, train$classe)
+```
+
+
+As we don't have the values for the variable classe in the test set (we are predicting it afterall), we cannot create a confusion matrix between predicted test classe values and actual test classe values. Hence, we cannot assess the out of sample error for the test set.
